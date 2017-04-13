@@ -1,0 +1,4 @@
+# Environment file for mm-memebot, used by systemd.
+MEMEBOT_LISTEN=":5020"
+MEMEBOT_LOGFILE="stdout"
+MEMEBOT_TOKEN=""

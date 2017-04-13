@@ -1,0 +1,12 @@
+[Unit]
+Description=Mattermost Memebot
+
+[Service]
+ExecStart=/usr/local/bin/mm-memebot
+EnvironmentFile=-/etc/default/mm-memebot
+Type=simple
+PIDFile=/run/mm-memebot.pid
+
+[Install]
+WantedBy=multi-user.target
+
