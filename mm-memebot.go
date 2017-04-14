@@ -28,7 +28,7 @@ func help(w http.ResponseWriter) {
 	h := "\\nMattermost Meme Bot\\n" +
              "**> Commands:**\\n" +
              "* `/meme memename;top_row;bottom_row` generate a meme image\\n" +
-             // "    (NOTE: memename can also be a URL to an image)\\n" +
+             "    (NOTE: memename can also be a URL to an image)\\n" +
              "* `/meme list` List templates\\n" +
              "* `/meme help` Shows this menu\\n"
 	fmt.Fprint(w, `{ "response_type": "ephemeral", "text": "` + h + `"}`)
@@ -126,9 +126,12 @@ func memeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	found := false
+	query := ""
 	if len(s[0]) > 7 &&
 	   (s[0][:7] == "http://" || s[0][:8] == "https://") {
 		found = true
+		query = "alt=" + s[0]
+		s[0] = "custom"
 	}
 	for _, m := range memeTemplates {
 		if m.Name == s[0] {
@@ -150,6 +153,7 @@ func memeHandler(w http.ResponseWriter, r *http.Request) {
 	var url *url.URL
 	url, _ = url.Parse(memegenUrl)
 	url.Path = s[0] + "/" + s[1] + "/" + s[2] + ".jpg"
+	url.RawQuery = query
 	fmt.Fprint(w, `{
 		"response_type": "in_channel",
 		"text": "![image](` + url.String() + `)"
