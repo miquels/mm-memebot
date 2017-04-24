@@ -23,6 +23,7 @@ type memeTemplate struct {
 }
 var memeTemplates = []memeTemplate{}
 var authToken string
+var imgWidth *string
 
 func help(w http.ResponseWriter) {
 	h := "\\nMattermost Meme Bot\\n" +
@@ -154,9 +155,13 @@ func memeHandler(w http.ResponseWriter, r *http.Request) {
 	url, _ = url.Parse(memegenUrl)
 	url.Path = s[0] + "/" + s[1] + "/" + s[2] + ".jpg"
 	url.RawQuery = query
+	sz := ""
+	if imgWidth != nil && *imgWidth != "" {
+		sz = " =" + *imgWidth + "x"
+	}
 	fmt.Fprint(w, `{
 		"response_type": "in_channel",
-		"text": "![image](` + url.String() + `)"
+		"text": "![image](` + url.String() + sz + `)"
 	}`)
 }
 
@@ -186,6 +191,7 @@ func main() {
 
 	env_listen := os.Getenv("MEMEBOT_LISTEN")
 	env_logfile := os.Getenv("MEMEBOT_LOG")
+	env_imgwidth := os.Getenv("MEMEBOT_IMGWIDTH")
 	authToken = os.Getenv("MEMEBOT_TOKEN")
 	if env_listen == "" {
 		env_listen = ":5020"
@@ -193,10 +199,15 @@ func main() {
 	if env_logfile == "" {
 		env_logfile = "stdout"
 	}
+	if env_imgwidth == "" {
+		env_imgwidth = "150"
+	}
 
 	logfile := flag.String("logfile", env_logfile,
 		"Path of logfile. Use 'syslog' for syslog, 'stdout' " +
 		"for standard output, or 'none' to disable logging.")
+	imgWidth = flag.String("imgwidth", env_imgwidth,
+		"Width of image in pixels")
 	listen := flag.String("listen", env_listen, "Server listen address")
 	flag.Parse()
 	if logfile != nil {
