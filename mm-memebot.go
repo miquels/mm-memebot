@@ -206,7 +206,7 @@ func main() {
 		env_logfile = "stdout"
 	}
 	if env_imgwidth == "" {
-		env_imgwidth = "150"
+		env_imgwidth = "250"
 	}
 
 	logfile := flag.String("logfile", env_logfile,
