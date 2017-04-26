@@ -149,7 +149,13 @@ func memeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for len(s) < 3 {
-		s = append(s, "_")
+		s = append(s, "")
+	}
+	if s[1] == "" {
+		s[1] = "_"
+	}
+	if s[2] == "" {
+		s[2] = "_"
 	}
 	var url *url.URL
 	url, _ = url.Parse(memegenUrl)
