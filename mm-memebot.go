@@ -98,6 +98,7 @@ func listTemplates(w http.ResponseWriter) {
 }
 
 func memeHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	text := r.FormValue("text")
 	s := strings.Split(text, ";")
 	for i := range s {
