@@ -133,7 +133,6 @@ func escape(text string) string {
 			ret += string(c)
 		}
 	}
-	log.Print("escape: " + text + " -> " + ret)
 	return ret
 }
 
@@ -204,7 +203,6 @@ func memeHandler(w http.ResponseWriter, r *http.Request) {
 	if imgWidth != nil && *imgWidth != "" {
 		sz = " =" + *imgWidth + "x"
 	}
-	log.Print("url: " + url.String())
 	responseText(w, "in_channel", `![image](` + url.String() + sz + `)`)
 }
 
