@@ -33,7 +33,7 @@ type Response struct {
 func help(w http.ResponseWriter) {
 	h := "\n  \nMattermost Meme Bot\n" +
              "**> Commands:**\n" +
-             "* `/meme memename;top_row;bottom_row` generate a meme image  \n" +
+             "* `/meme memename top_row;bottom_row` generate a meme image  \n" +
              "    (NOTE: memename can also be a URL to an image)\n" +
              "* `/meme list` List templates\n" +
              "* `/meme help` Shows this menu\n\n"
@@ -106,45 +106,89 @@ func listTemplates(w http.ResponseWriter) {
 	responseEphemeral(w, "```\n" + strings.Join(r, "\n") + "```\n")
 }
 
+func escape(text string) string {
+	if text == "" {
+		return "_"
+	}
+	ret := ""
+	for _, c := range text {
+		switch c {
+		case ' ':
+			ret += "_"
+		case '_':
+			ret += "__"
+		case '-':
+			ret += "--"
+		case '?':
+			ret += "~q"
+		case '%':
+			ret += "~p"
+		case '#':
+			ret += "~h"
+		case '/':
+			ret += "~s"
+		case '"':
+			ret += "''"
+		default:
+			ret += string(c)
+		}
+	}
+	log.Print("escape: " + text + " -> " + ret)
+	return ret
+}
+
 func memeHandler(w http.ResponseWriter, r *http.Request) {
+
 	w.Header().Set("Content-Type", "application/json")
-	text := r.FormValue("text")
-	s := strings.Split(text, ";")
+
+	// try to split into command<SPACE>rest or command<SEMICOLON>rest
+	text := strings.Trim(r.FormValue("text"), " \t")
+	p := strings.IndexAny(text, " ;")
+
+	if p <= 0 {
+		// single command.
+		switch(text) {
+		case "help":
+			help(w)
+		case "templates", "list":
+			listTemplates(w)
+		default:
+			responseEphemeral(w, "try: /meme help\n")
+		}
+		return
+	}
+
+	meme := text[:p]
+	s := strings.Split(text[p+1:], ";")
 	for i := range s {
 		s[i] = strings.Trim(s[i], " \t")
 	}
-
-	if len(s) == 1 && s[0] == "help" {
-		help(w)
-		return
+	for len(s) < 2 {
+		s = append(s, "")
 	}
-	if len(s) == 1 && (s[0] == "templates" || s[0] == "list") {
-		listTemplates(w)
-		return
-	}
-	if len(s) < 1 || s[0] == "" {
-		responseEphemeral(w, "try: /meme help\n")
-		return
-	}
-
-	if len(memeTemplates) == 0 {
-		if !getTemplates(w) {
-			return
-		}
-	}
+	top := escape(s[0])
+	bottom := escape(s[1])
 
 	found := false
 	query := ""
-	if len(s[0]) > 7 &&
-	   (s[0][:7] == "http://" || s[0][:8] == "https://") {
+	if len(meme) > 7 &&
+	   (meme[:7] == "http://" || meme[:8] == "https://") {
+		// custom image.
 		found = true
-		query = "alt=" + s[0]
-		s[0] = "custom"
-	}
-	for _, m := range memeTemplates {
-		if m.Name == s[0] {
-			found = true
-			break
+		query = "alt=" + meme
+		meme = "custom"
+	} else {
+		// find meme
+		if len(memeTemplates) == 0 {
+			if !getTemplates(w) {
+				return
+			}
+		}
+		for _, m := range memeTemplates {
+			if m.Name == meme {
+				found = true
+				break
+			}
 		}
 	}
 	if !found {
@@ -152,23 +196,15 @@ func memeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for len(s) < 3 {
-		s = append(s, "")
-	}
-	if s[1] == "" {
-		s[1] = "_"
-	}
-	if s[2] == "" {
-		s[2] = "_"
-	}
 	var url *url.URL
 	url, _ = url.Parse(memegenUrl)
-	url.Path = s[0] + "/" + s[1] + "/" + s[2] + ".jpg"
+	url.Path = meme + "/" + top + "/" + bottom + ".jpg"
 	url.RawQuery = query
 	sz := ""
 	if imgWidth != nil && *imgWidth != "" {
 		sz = " =" + *imgWidth + "x"
 	}
+	log.Print("url: " + url.String())
 	responseText(w, "in_channel", `![image](` + url.String() + sz + `)`)
 }
 
