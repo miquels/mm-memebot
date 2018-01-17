@@ -55,7 +55,7 @@ func responseEphemeral(w http.ResponseWriter, text string) {
 
 func getTemplates(w http.ResponseWriter) bool {
 	// Get JSON
-	api := memegenUrl + "/api/templates/"
+	api := memegenUrl + "api/templates/"
 	var body []byte
 	resp, err := http.Get(api)
 	if err == nil {
