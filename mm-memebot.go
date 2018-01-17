@@ -124,7 +124,6 @@ func memeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(s) < 1 || s[0] == "" {
 		responseEphemeral(w, "try: /meme help\n")
-		responseEphemeral(w, "")
 		return
 	}
 
