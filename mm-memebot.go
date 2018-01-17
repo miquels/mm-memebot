@@ -25,14 +25,32 @@ var memeTemplates = []memeTemplate{}
 var authToken string
 var imgWidth *string
 
+type Response struct {
+	ResponseType	string	`json:"response_type"`
+	Text		string	`json:"text"`
+}
+
 func help(w http.ResponseWriter) {
-	h := "\\nMattermost Meme Bot\\n" +
-             "**> Commands:**\\n" +
-             "* `/meme memename;top_row;bottom_row` generate a meme image\\n" +
-             "    (NOTE: memename can also be a URL to an image)\\n" +
-             "* `/meme list` List templates\\n" +
-             "* `/meme help` Shows this menu\\n"
-	fmt.Fprint(w, `{ "response_type": "ephemeral", "text": "` + h + `"}`)
+	h := "\n  \nMattermost Meme Bot\n" +
+             "**> Commands:**\n" +
+             "* `/meme memename;top_row;bottom_row` generate a meme image  \n" +
+             "    (NOTE: memename can also be a URL to an image)\n" +
+             "* `/meme list` List templates\n" +
+             "* `/meme help` Shows this menu\n\n"
+	responseEphemeral(w, h)
+}
+
+func responseText(w http.ResponseWriter, tp string, text string) {
+	r := &Response{
+		ResponseType:	tp,
+		Text:		text,
+	}
+	b, _ := json.Marshal(r)
+	w.Write(b)
+}
+
+func responseEphemeral(w http.ResponseWriter, text string) {
+	responseText(w, "ephemeral", text)
 }
 
 func getTemplates(w http.ResponseWriter) bool {
@@ -45,19 +63,13 @@ func getTemplates(w http.ResponseWriter) bool {
 		resp.Body.Close()
 	}
 	if err != nil {
-		fmt.Fprint(w, `{
-			"response_type": "ephemeral",
-			"text": "` + api + ": " + err.Error() + `"
-		}`)
+		responseEphemeral(w, "error: " + err.Error() + "\n")
 		return false
 	}
 	// Decode JSON into map
 	var kv map[string]string
 	if err := json.Unmarshal(body, &kv); err != nil {
-		fmt.Fprint(w, `{
-			"response_type": "ephemeral",
-			"text": "` + api + ": " + err.Error() + `"
-		}`)
+		responseEphemeral(w, "error: " + api + ": " + err.Error() + "\n")
 		return false
 	}
 	// reverse map
@@ -91,10 +103,7 @@ func listTemplates(w http.ResponseWriter) {
 	for _, m := range memeTemplates {
 		r = append(r, fmt.Sprintf("%-20s %s", m.Name, m.Desc))
 	}
-	fmt.Fprint(w, `{
-		"response_type": "ephemeral",
-		"text": "` + "```\\n" + strings.Join(r, "\\n") + "```" + `"
-	}`)
+	responseEphemeral(w, "```\n" + strings.Join(r, "\n") + "```\n")
 }
 
 func memeHandler(w http.ResponseWriter, r *http.Request) {
@@ -114,10 +123,8 @@ func memeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(s) < 1 || s[0] == "" {
-		fmt.Fprint(w, `{
-			"response_type": "ephemeral",
-			"text": "try: /meme help"
-		}`)
+		responseEphemeral(w, "try: /meme help\n")
+		responseEphemeral(w, "")
 		return
 	}
 
@@ -142,10 +149,7 @@ func memeHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if !found {
-		fmt.Fprint(w, `{
-			"response_type": "ephemeral",
-			"text": "meme not found\ntry: /meme list"
-		}`)
+		responseEphemeral(w, "meme not found\ntry: /meme list\n")
 		return
 	}
 
@@ -166,10 +170,7 @@ func memeHandler(w http.ResponseWriter, r *http.Request) {
 	if imgWidth != nil && *imgWidth != "" {
 		sz = " =" + *imgWidth + "x"
 	}
-	fmt.Fprint(w, `{
-		"response_type": "in_channel",
-		"text": "![image](` + url.String() + sz + `)"
-	}`)
+	responseText(w, "in_channel", `![image](` + url.String() + sz + `)`)
 }
 
 func setLog(logfile string) {
